@@ -34,7 +34,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [todayProvider.overrideWithValue(monday)],
-          child: const ShiftUmcApp(),
+          child: const ShiftUmcApp(demoMode: true),
         ),
       );
       expect(find.text('Sportello'), findsOneWidget);

@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Configurazione specifica del progetto Supabase (solo URL e chiave pubblica).
+/config/supabase.local.json
