@@ -6,6 +6,7 @@ import '../../models/planning.dart';
 import '../../providers/auth_providers.dart';
 import 'login_screen.dart';
 import 'duties_panel.dart';
+import 'employees_panel.dart';
 
 class AuthGate extends ConsumerStatefulWidget {
   const AuthGate({super.key});
@@ -79,23 +80,29 @@ class _AccountPage extends ConsumerStatefulWidget {
   ConsumerState<_AccountPage> createState() => _AccountPageState();
 }
 
+enum _AdminSection { duties, employees }
+
 class _AccountPageState extends ConsumerState<_AccountPage> {
-  bool _showDuties = false;
+  _AdminSection? _section;
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
     final message = widget.message;
     final retry = widget.retry;
-    final managing = _showDuties && profile?.role == UserRole.admin;
+    final managing = _section != null && profile?.role == UserRole.admin;
     final action = ref.watch(authActionProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Text(managing ? 'Mansioni' : 'ShiftUMC'),
+        title: Text(
+          managing
+              ? (_section == _AdminSection.duties ? 'Mansioni' : 'Dipendenti')
+              : 'ShiftUMC',
+        ),
         leading: managing
             ? IconButton(
                 tooltip: 'Torna al profilo',
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _showDuties = false),
+                onPressed: () => setState(() => _section = null),
               )
             : null,
         actions: [
@@ -110,7 +117,9 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
       ),
       body: SafeArea(
         child: managing
-            ? DutiesPanel(userId: profile!.id)
+            ? (_section == _AdminSection.duties
+                  ? DutiesPanel(userId: profile!.id)
+                  : EmployeesPanel(userId: profile!.id))
             : Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -140,10 +149,19 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
                           if (profile.role == UserRole.admin) ...[
                             const SizedBox(height: 24),
                             FilledButton.icon(
-                              onPressed: () =>
-                                  setState(() => _showDuties = true),
+                              onPressed: () => setState(
+                                () => _section = _AdminSection.duties,
+                              ),
                               icon: const Icon(Icons.work_outline),
                               label: const Text('Gestisci mansioni'),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () => setState(
+                                () => _section = _AdminSection.employees,
+                              ),
+                              icon: const Icon(Icons.people_outline),
+                              label: const Text('Gestisci dipendenti'),
                             ),
                           ],
                         ] else
