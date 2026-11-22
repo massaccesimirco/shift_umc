@@ -1,5 +1,5 @@
--- Eseguire soltanto su un database di test con la migrazione applicata.
--- Tutte le fixture e le modifiche vengono annullate alla fine.
+-- Mi annoto il caso da verificare: Eseguire soltanto su un database di test con la migrazione applicata.
+-- Mi annoto il caso da verificare: Tutte le fixture e le modifiche vengono annullate alla fine.
 begin;
 set local plpgsql.check_asserts = on;
 
@@ -39,7 +39,7 @@ insert into public.assignment(week_plan_id, employee_id, date, period, duty_id) 
  ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', '2026-09-21', 'MORNING', '20000000-0000-0000-0000-000000000001'),
  ('30000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', '2026-09-28', 'MORNING', '20000000-0000-0000-0000-000000000001');
 
--- Vincoli eseguiti come proprietario: indipendenti dalle RLS.
+-- Mi annoto il caso da verificare: Vincoli eseguiti come proprietario: indipendenti dalle RLS.
 select pg_temp.expect_error($s$insert into public.duty(name, type, exclusive) values ('Attività esclusiva', 'ACTIVITY', true)$s$, '23514');
 select pg_temp.expect_error($s$insert into public.duty(name, type) values ('Mansione test A', 'ACTIVITY')$s$, '23505');
 select pg_temp.expect_error($s$update public.week_plan set start_date = '2026-09-22' where start_date = '2026-09-21'$s$, '23514');
@@ -50,7 +50,7 @@ select pg_temp.expect_error($s$update public.assignment set duty_id = '99999999-
 select pg_temp.expect_error($s$delete from auth.users where id = '10000000-0000-0000-0000-000000000002'$s$, '23503,23001');
 select pg_temp.expect_error($s$delete from public.user_profile where id = '10000000-0000-0000-0000-000000000002'$s$, '23503,23001');
 
--- Anonymous: nessuna lettura né scrittura.
+-- Mi annoto il caso da verificare: Anonymous: nessuna lettura né scrittura.
 set local role anon;
 select pg_temp.expect_error('select * from public.user_profile', '42501');
 select pg_temp.expect_error('select * from public.duty', '42501');
@@ -59,7 +59,7 @@ select pg_temp.expect_error('select * from public.assignment', '42501');
 select pg_temp.expect_error('delete from public.assignment', '42501');
 reset role;
 
--- Un account Auth senza profilo non riceve accesso per il solo fatto di esistere.
+-- Mi annoto il caso da verificare: Un account Auth senza profilo non riceve accesso per il solo fatto di esistere.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000004';
 do $$ begin
@@ -69,7 +69,7 @@ do $$ begin
   assert (select count(*) from public.assignment) = 0;
 end $$;
 
--- Mario legge le proprie due mansioni pubblicate, non la bozza o Anna.
+-- Mi annoto il caso da verificare: Mario legge le proprie due mansioni pubblicate, non la bozza o Anna.
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000002';
 do $$ begin
   assert (select count(*) from public.user_profile) = 1;
@@ -83,7 +83,7 @@ select pg_temp.expect_error($s$update public.week_plan set status = 'PUBLISHED',
 select pg_temp.expect_error('delete from public.assignment', '42501');
 reset role;
 
--- Disattivazione: niente dati, pur mantenendo lo storico.
+-- Mi annoto il caso da verificare: Disattivazione: niente dati, pur mantenendo lo storico.
 update public.user_profile set active = false where id = '10000000-0000-0000-0000-000000000002';
 set local role authenticated;
 do $$ begin
@@ -94,7 +94,7 @@ do $$ begin
 end $$;
 reset role;
 
--- Admin: visibilità completa, comprese bozze e dipendenti disattivati.
+-- Mi annoto il caso da verificare: Admin: visibilità completa, comprese bozze e dipendenti disattivati.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
 do $$ begin
@@ -102,7 +102,7 @@ do $$ begin
   assert (select count(*) from public.week_plan) = 2;
   assert (select count(*) from public.assignment) = 4;
 end $$;
--- La scrittura delle settimane resta una fase successiva anche dopo la gestione mansioni.
+-- Mi annoto il caso da verificare: La scrittura delle settimane resta una fase successiva anche dopo la gestione mansioni.
 select pg_temp.expect_error($s$update public.week_plan set status = 'PUBLISHED', published_at = now()$s$, '42501');
 select pg_temp.expect_error('delete from public.user_profile', '42501');
 reset role;

@@ -1,4 +1,5 @@
 import '../models/access_failure.dart';
+import '../models/password_rules.dart';
 import '../models/planning.dart';
 import '../repositories/employee_repository.dart';
 
@@ -22,6 +23,30 @@ class EmployeeService {
         'Questa schermata gestisce soltanto i dipendenti.',
       );
     }
+  }
+
+  Future<void> create(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+  ) async {
+    _requireAdmin();
+    final first = firstName.trim();
+    final last = lastName.trim();
+    final address = email.trim().toLowerCase();
+    if ([first, last].any((name) => name.isEmpty || name.runes.length > 120)) {
+      throw const AccessFailure(
+        'Nome e cognome devono contenere da 1 a 120 caratteri.',
+      );
+    }
+    if (address.length > 254 ||
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(address)) {
+      throw const AccessFailure('Inserisci un indirizzo email valido.');
+    }
+    final error = passwordError(password);
+    if (error != null) throw AccessFailure(error);
+    await repository.create(first, last, address, password);
   }
 
   Future<List<UserProfile>> list() async {

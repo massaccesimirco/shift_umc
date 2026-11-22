@@ -28,6 +28,22 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> updatePassword(String password) async {
+    try {
+      await client.auth.updateUser(UserAttributes(password: password));
+    } on AuthException catch (error) {
+      throw AccessFailure(switch (error.code) {
+        'weak_password' => 'Scegli una password più robusta, conforme ai requisiti del servizio.',
+        'same_password' =>
+          'La nuova password deve essere diversa da quella attuale.',
+        'reauthentication_needed' =>
+          'Esci e accedi di nuovo prima di cambiare la password.',
+        _ => 'Password non modificata. Verifica la sessione e riprova.',
+      });
+    }
+  }
+
+  @override
   Future<void> signOut() => client.auth.signOut(scope: SignOutScope.local);
 
   @override

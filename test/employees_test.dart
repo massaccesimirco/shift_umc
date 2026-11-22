@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shift_umc/app/app.dart';
@@ -36,6 +36,27 @@ class FakeEmployees implements EmployeeRepository {
     reads++;
     if (readError != null) throw readError!;
     return rows.toList();
+  }
+
+  @override
+  Future<void> create(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+  ) async {
+    writes++;
+    if (pending != null) await pending!.future;
+    if (writeError != null) throw writeError!;
+    rows.add(
+      UserProfile(
+        id: 'new-employee',
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        role: UserRole.employee,
+      ),
+    );
   }
 
   @override

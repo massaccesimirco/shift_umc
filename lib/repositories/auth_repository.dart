@@ -4,5 +4,6 @@ abstract class AuthRepository {
   Stream<String?> get userIds;
   Future<void> signIn(String email, String password);
   Future<void> signOut();
+  Future<void> updatePassword(String password);
   Future<UserProfile?> profileFor(String userId);
 }

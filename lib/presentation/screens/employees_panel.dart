@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/access_failure.dart';
+import '../../models/password_rules.dart';
 import '../../models/planning.dart';
 import '../../providers/employee_providers.dart';
 
@@ -17,7 +18,7 @@ class _EmployeesPanelState extends ConsumerState<EmployeesPanel> {
   bool _busy = false;
   String? _error;
 
-  Future<void> _edit(UserProfile employee) async {
+  Future<void> _edit([UserProfile? employee]) async {
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -26,6 +27,15 @@ class _EmployeesPanelState extends ConsumerState<EmployeesPanel> {
     );
     if (saved == true && mounted) {
       ref.invalidate(employeesProvider(widget.userId));
+      if (employee == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Dipendente creato. Comunica la password iniziale al destinatario.',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -80,6 +90,15 @@ class _EmployeesPanelState extends ConsumerState<EmployeesPanel> {
           children: [
             const Text(
               'Gestisci i dati e l’accesso dei dipendenti del tuo ufficio.',
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                onPressed: _busy ? null : () => _edit(),
+                icon: const Icon(Icons.person_add_outlined),
+                label: const Text('Aggiungi dipendente'),
+              ),
             ),
             const SizedBox(height: 12),
             Align(
@@ -205,7 +224,7 @@ class _EmployeesPanelState extends ConsumerState<EmployeesPanel> {
 class _EmployeeEditor extends ConsumerStatefulWidget {
   const _EmployeeEditor({required this.userId, required this.employee});
   final String userId;
-  final UserProfile employee;
+  final UserProfile? employee;
   @override
   ConsumerState<_EmployeeEditor> createState() => _EmployeeEditorState();
 }
@@ -213,19 +232,24 @@ class _EmployeeEditor extends ConsumerStatefulWidget {
 class _EmployeeEditorState extends ConsumerState<_EmployeeEditor> {
   final _form = GlobalKey<FormState>();
   late final TextEditingController _first, _last;
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _obscure = true;
   bool _saving = false;
   String? _error;
   @override
   void initState() {
     super.initState();
-    _first = TextEditingController(text: widget.employee.firstName);
-    _last = TextEditingController(text: widget.employee.lastName);
+    _first = TextEditingController(text: widget.employee?.firstName);
+    _last = TextEditingController(text: widget.employee?.lastName);
   }
 
   @override
   void dispose() {
     _first.dispose();
     _last.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
   }
 
@@ -244,7 +268,16 @@ class _EmployeeEditorState extends ConsumerState<_EmployeeEditor> {
       final service = await ref.read(
         employeeServiceProvider(widget.userId).future,
       );
-      await service.rename(widget.employee, _first.text, _last.text);
+      if (widget.employee == null) {
+        await service.create(
+          _first.text,
+          _last.text,
+          _email.text,
+          _password.text,
+        );
+      } else {
+        await service.rename(widget.employee!, _first.text, _last.text);
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
@@ -260,7 +293,9 @@ class _EmployeeEditorState extends ConsumerState<_EmployeeEditor> {
   Widget build(BuildContext context) => PopScope(
     canPop: !_saving,
     child: AlertDialog(
-      title: const Text('Modifica dipendente'),
+      title: Text(
+        widget.employee == null ? 'Aggiungi dipendente' : 'Modifica dipendente',
+      ),
       content: SizedBox(
         width: 440,
         child: SingleChildScrollView(
@@ -288,10 +323,55 @@ class _EmployeeEditorState extends ConsumerState<_EmployeeEditor> {
                   validator: _validate,
                 ),
                 const SizedBox(height: 16),
-                Text(widget.employee.email),
-                const Text(
-                  'Email e credenziali non vengono modificate da questa schermata.',
-                ),
+                if (widget.employee == null) ...[
+                  TextFormField(
+                    controller: _email,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (value) =>
+                        value != null &&
+                            value.trim().length <= 254 &&
+                            RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                .hasMatch(value.trim())
+                        ? null
+                        : 'Inserisci un indirizzo email valido.',
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _password,
+                    enabled: !_saving,
+                    obscureText: _obscure,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    decoration: InputDecoration(
+                      labelText: 'Password iniziale',
+                      helperText: 'Almeno 8 caratteri.',
+                      suffixIcon: IconButton(
+                        tooltip: _obscure
+                            ? 'Mostra password'
+                            : 'Nascondi password',
+                        onPressed: _saving
+                            ? null
+                            : () => setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                          _obscure ? Icons.visibility : Icons.visibility_off,
+                        ),
+                      ),
+                    ),
+                    validator: passwordError,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Comunica la password iniziale al dipendente. Potrà cambiarla dal proprio profilo. Non viene inviata alcuna email.',
+                  ),
+                ] else ...[
+                  Text(widget.employee!.email),
+                  const Text(
+                    'Email e credenziali non vengono modificate da questa schermata.',
+                  ),
+                ],
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
@@ -319,7 +399,7 @@ class _EmployeeEditorState extends ConsumerState<_EmployeeEditor> {
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: const Text('Salva'),
+          child: Text(widget.employee == null ? 'Crea dipendente' : 'Salva'),
         ),
       ],
     ),

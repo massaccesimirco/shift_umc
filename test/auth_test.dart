@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shift_umc/app/app.dart';
@@ -20,6 +20,7 @@ class FakeAuthRepository implements AuthRepository {
   Object? profileError;
   Completer<void>? pendingLogin;
   int signInCalls = 0;
+  int profileReads = 0;
   String? receivedEmail, receivedPassword;
   @override
   Stream<String?> get userIds async* {
@@ -39,6 +40,11 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> updatePassword(String password) async {
+    receivedPassword = password;
+  }
+
+  @override
   Future<void> signOut() async {
     id = null;
     changes.add(null);
@@ -46,6 +52,7 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<UserProfile?> profileFor(String userId) async {
+    profileReads++;
     if (profileError != null) throw profileError!;
     return profile;
   }
@@ -226,10 +233,45 @@ void main() {
     await tester.tap(find.text('Aggiorna profilo'));
     await tester.pumpAndSettle();
     expect(find.text('Amministratore'), findsNothing);
-    expect(find.textContaining('Account non abilitato'), findsOneWidget);
+    expect(
+      find.textContaining('Account disattivato o non abilitato'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Esci'));
     await tester.pumpAndSettle();
     expect(find.text('Accedi al tuo ufficio'), findsOneWidget);
+  });
+  testWidgets(
+    'Account non abilitato: messaggio subito, nessun retry automatico e ritorno al login',
+    (tester) async {
+      final repo = FakeAuthRepository();
+      await mount(tester, repo);
+      await enterLogin(tester);
+      expect(
+        find.textContaining('Account disattivato o non abilitato'),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(repo.profileReads, 1);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(repo.profileReads, 1);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.tap(find.text('Torna al login'));
+      await tester.pumpAndSettle();
+      expect(find.text('Accedi al tuo ufficio'), findsOneWidget);
+    },
+  );
+  testWidgets('Account riattivato: Riprova rilegge il profilo', (tester) async {
+    final repo = FakeAuthRepository()
+      ..id = 'user-1'
+      ..profile = person(active: false);
+    await mount(tester, repo);
+    expect(find.textContaining('Account disattivato'), findsOneWidget);
+    repo.profile = person();
+    await tester.tap(find.text('Riprova'));
+    await tester.pumpAndSettle();
+    expect(find.text('Benvenuto, Mirco Test'), findsOneWidget);
   });
   testWidgets('Errore rete sul profilo: retry senza dati demo', (tester) async {
     final repo = FakeAuthRepository()

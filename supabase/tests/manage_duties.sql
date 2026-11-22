@@ -1,4 +1,4 @@
--- Solo database di test: fixture annullate con ROLLBACK.
+-- Mi annoto il caso da verificare: Solo database di test: fixture annullate con ROLLBACK.
 begin;
 set local plpgsql.check_asserts = on;
 create or replace function pg_temp.expect_error(statement text, expected_code text)
@@ -41,12 +41,12 @@ set local role authenticated;
 select pg_temp.expect_error($s$update public.duty set exclusive=false where name='Test rinominato'$s$,'P0001');
 select pg_temp.expect_error($s$update public.duty set type='ACTIVITY',exclusive=false where name='Test rinominato'$s$,'P0001');
 update public.duty set active=false where name='Test rinominato';
--- Il dipendente vede anche lo storico disattivato ma non può modificare.
+-- Mi annoto il caso da verificare: Il dipendente vede anche lo storico disattivato ma non può modificare.
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000002';
 select pg_temp.expect_error($s$insert into public.duty(name,type) values ('Abuso','ACTIVITY')$s$,'42501');
 update public.duty set active=true where name='Test rinominato';
 do $$ begin assert (select not active from public.duty where name='Test rinominato'); end $$;
--- Profilo assente: insert vietato e update senza righe autorizzate.
+-- Mi annoto il caso da verificare: Profilo assente: insert vietato e update senza righe autorizzate.
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000003';
 select pg_temp.expect_error($s$insert into public.duty(name,type) values ('Abuso','ACTIVITY')$s$,'42501');
 update public.duty set active=true;

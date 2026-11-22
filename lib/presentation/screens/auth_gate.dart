@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/access_failure.dart';
@@ -7,6 +7,8 @@ import '../../providers/auth_providers.dart';
 import 'login_screen.dart';
 import 'duties_panel.dart';
 import 'employees_panel.dart';
+import 'weeks_panel.dart';
+import 'password_dialog.dart';
 
 class AuthGate extends ConsumerStatefulWidget {
   const AuthGate({super.key});
@@ -69,8 +71,7 @@ class _AuthGateState extends ConsumerState<AuthGate>
       );
 }
 
-// Prima schermata autenticata: usa esclusivamente il profilo remoto.
-// Le viste di pianificazione verranno collegate ai dati reali nel passo successivo.
+// Mostro la prima schermata autenticata usando soltanto il profilo remoto.
 class _AccountPage extends ConsumerStatefulWidget {
   const _AccountPage({this.profile, this.message, required this.retry});
   final UserProfile? profile;
@@ -80,7 +81,7 @@ class _AccountPage extends ConsumerStatefulWidget {
   ConsumerState<_AccountPage> createState() => _AccountPageState();
 }
 
-enum _AdminSection { duties, employees }
+enum _AdminSection { duties, employees, weeks }
 
 class _AccountPageState extends ConsumerState<_AccountPage> {
   _AdminSection? _section;
@@ -95,7 +96,11 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
       appBar: AppBar(
         title: Text(
           managing
-              ? (_section == _AdminSection.duties ? 'Mansioni' : 'Dipendenti')
+              ? switch (_section!) {
+                  _AdminSection.duties => 'Mansioni',
+                  _AdminSection.employees => 'Dipendenti',
+                  _AdminSection.weeks => 'Settimane',
+                }
               : 'ShiftUMC',
         ),
         leading: managing
@@ -117,9 +122,11 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
       ),
       body: SafeArea(
         child: managing
-            ? (_section == _AdminSection.duties
-                  ? DutiesPanel(userId: profile!.id)
-                  : EmployeesPanel(userId: profile!.id))
+            ? switch (_section!) {
+                _AdminSection.duties => DutiesPanel(userId: profile!.id),
+                _AdminSection.employees => EmployeesPanel(userId: profile!.id),
+                _AdminSection.weeks => WeeksPanel(userId: profile!.id),
+              }
             : Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -146,6 +153,30 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
                           Text(profile.email),
                           const SizedBox(height: 12),
                           const Text('Il tuo account è attivo.'),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: action.isLoading
+                                ? null
+                                : () async {
+                                    final saved = await showDialog<bool>(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (_) =>
+                                          PasswordDialog(userId: profile.id),
+                                    );
+                                    if (saved == true && context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Password aggiornata.'),
+                                        ),
+                                      );
+                                    }
+                                  },
+                            icon: const Icon(Icons.password),
+                            label: const Text('Cambia password'),
+                          ),
                           if (profile.role == UserRole.admin) ...[
                             const SizedBox(height: 24),
                             FilledButton.icon(
@@ -163,12 +194,32 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
                               icon: const Icon(Icons.people_outline),
                               label: const Text('Gestisci dipendenti'),
                             ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () => setState(
+                                () => _section = _AdminSection.weeks,
+                              ),
+                              icon: const Icon(Icons.calendar_month),
+                              label: const Text('Gestisci settimane'),
+                            ),
                           ],
                         ] else
                           Text(
                             message!,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
+                        if (profile == null) ...[
+                          const SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: action.isLoading
+                                ? null
+                                : () => ref
+                                      .read(authActionProvider.notifier)
+                                      .signOut(),
+                            icon: const Icon(Icons.login),
+                            label: const Text('Torna al login'),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         OutlinedButton(
                           onPressed: action.isLoading ? null : retry,

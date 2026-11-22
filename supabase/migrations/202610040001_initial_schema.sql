@@ -1,4 +1,4 @@
--- ShiftUMC: prima migrazione
+-- Definisco lo schema iniziale di ShiftUMC.
 begin;
 
 create type public.user_role as enum ('ADMIN', 'EMPLOYEE');
@@ -55,9 +55,9 @@ create index assignment_employee_week on public.assignment(employee_id, week_pla
 create index assignment_duty on public.assignment(duty_id);
 create index week_plan_creator on public.week_plan(created_by);
 
--- Funzioni di supporto in uno schema non esposto dalle API.
--- SECURITY DEFINER consente di leggere il profilo senza ricorsione nelle RLS.
--- L'identità proviene da auth.uid(), non da un parametro passato dal client.
+-- Raccolgo le funzioni di supporto in uno schema non esposto dalle API.
+-- Uso SECURITY DEFINER per leggere il profilo senza ricorsione nelle RLS.
+-- Ricavo l’identità da auth.uid(), senza fidarmi di un parametro client.
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 grant usage on schema private to authenticated;
@@ -85,7 +85,7 @@ alter table public.duty enable row level security;
 alter table public.week_plan enable row level security;
 alter table public.assignment enable row level security;
 
--- Rimuove anche gli eventuali privilegi assegnati automaticamente da Supabase.
+-- Rimuovo anche gli eventuali privilegi assegnati automaticamente da Supabase.
 revoke all on public.user_profile, public.duty, public.week_plan, public.assignment
   from public, anon, authenticated;
 grant select on public.user_profile, public.duty, public.week_plan, public.assignment
@@ -95,7 +95,7 @@ create policy profile_read on public.user_profile for select to authenticated
 using ((select private.is_admin()) or
   (id = (select auth.uid()) and (select private.is_active_user())));
 
--- Anche una mansione disattivata deve essere leggibile nello storico.
+-- Mantengo leggibili anche le mansioni disattivate per consultare lo storico.
 create policy duty_read on public.duty for select to authenticated
 using ((select private.is_active_user()));
 

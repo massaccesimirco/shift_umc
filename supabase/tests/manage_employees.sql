@@ -1,4 +1,4 @@
--- Eseguire solo in un database di test con tutte e tre le migrazioni applicate.
+-- Mi annoto il caso da verificare: Eseguire solo in un database di test con tutte e tre le migrazioni applicate.
 begin;
 set local plpgsql.check_asserts = on;
 create or replace function pg_temp.expect_error(statement text, expected_code text)
@@ -39,7 +39,7 @@ select pg_temp.expect_error($s$update public.user_profile set email='changed@tes
 select pg_temp.expect_error($s$update public.user_profile set id=gen_random_uuid() where role='EMPLOYEE'$s$,'42501');
 select pg_temp.expect_error($s$delete from public.user_profile where role='EMPLOYEE'$s$,'42501');
 select pg_temp.expect_error($s$insert into public.user_profile(id,first_name,last_name,email) values ('10000000-0000-0000-0000-000000000004','No','Insert','missing@test.invalid')$s$,'42501');
--- Nessun admin può essere modificato, compreso chi esegue l'operazione.
+-- Mi annoto il caso da verificare: Nessun admin può essere modificato, compreso chi esegue l'operazione.
 do $$ declare n integer; begin
  update public.user_profile set active=false,first_name='Vietato' where role='ADMIN';
  get diagnostics n=row_count; assert n=0;
@@ -49,7 +49,7 @@ do $$ begin
  assert (select not active from public.user_profile where role='EMPLOYEE');
  assert (select count(*) from public.assignment)=1;
 end $$;
--- Sessione dipendente ancora valida, ma nessun accesso ai dati dopo disattivazione.
+-- Mi annoto il caso da verificare: Sessione dipendente ancora valida, ma nessun accesso ai dati dopo disattivazione.
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000002';
 do $$ declare n integer; begin
  assert (select count(*) from public.user_profile)=0;
@@ -59,7 +59,7 @@ do $$ declare n integer; begin
  update public.user_profile set active=true where id=auth.uid();
  get diagnostics n=row_count; assert n=0;
 end $$;
--- Riattivazione: stessi dati e storico.
+-- Mi annoto il caso da verificare: Riattivazione: stessi dati e storico.
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
 update public.user_profile set active=true where role='EMPLOYEE';
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000002';
@@ -70,7 +70,7 @@ do $$ declare n integer; begin
  get diagnostics n=row_count; assert n=0;
 end $$;
 select pg_temp.expect_error($s$update public.user_profile set role='ADMIN' where id=auth.uid()$s$,'42501');
--- Account senza profilo e amministratore disattivato: update di zero righe.
+-- Mi annoto il caso da verificare: Account senza profilo e amministratore disattivato: update di zero righe.
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000004';
 do $$ declare n integer; begin
  update public.user_profile set active=false; get diagnostics n=row_count; assert n=0;

@@ -18,6 +18,8 @@ final sessionUserProvider = StreamProvider<String?>(
 final currentProfileProvider = FutureProvider.autoDispose
     .family<UserProfile, String>(
       (ref, userId) => ref.watch(authServiceProvider).requireProfile(userId),
+      // Lascio il nuovo tentativo alla schermata, anche quando il profilo non è accessibile.
+      retry: (retryCount, error) => null,
     );
 final authActionProvider = AsyncNotifierProvider<AuthActions, void>(
   AuthActions.new,

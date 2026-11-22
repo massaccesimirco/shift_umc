@@ -10,7 +10,7 @@ import 'auth_providers.dart';
 final dutyRepositoryProvider = Provider<DutyRepository>(
   (ref) => SupabaseDutyRepository(Supabase.instance.client),
 );
-// L'identità nella chiave separa la cache Riverpod tra account.
+// Uso l’identità nella chiave per separare la cache Riverpod tra account.
 final dutiesProvider = FutureProvider.autoDispose.family<List<Duty>, String>((
   ref,
   userId,

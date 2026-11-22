@@ -1,7 +1,7 @@
 import '../../models/planning.dart';
 import '../../repositories/planning_repository.dart';
 
-// Sorgente in memoria per studiare e verificare il flusso
+// Uso questa sorgente in memoria per studiare e verificare il flusso della demo.
 class DemoPlanningRepository implements PlanningRepository {
   DemoPlanningRepository(DateTime today) {
     final monday = mondayOf(today);

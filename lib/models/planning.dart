@@ -64,7 +64,7 @@ class Assignment {
   final Period period;
 }
 
-// Le date di pianificazione sono date civili locali, senza orari di turno.
+// Tratto le date di pianificazione come giorni civili locali, senza orari di turno.
 DateTime dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
 DateTime mondayOf(DateTime value) => DateTime(

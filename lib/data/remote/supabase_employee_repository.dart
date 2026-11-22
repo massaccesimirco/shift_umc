@@ -31,10 +31,42 @@ class SupabaseEmployeeRepository implements EmployeeRepository {
         .toList();
   }
 
+  @override
+  Future<void> create(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+  ) async {
+    try {
+      await client.functions.invoke(
+        'create-employee',
+        body: {
+          'first_name': firstName,
+          'last_name': lastName,
+          'email': email,
+          'password': password,
+        },
+      );
+    } on FunctionException catch (error) {
+      final details = error.details;
+      final code = details is Map ? details['code'] : null;
+      throw AccessFailure(switch (code) {
+        'invalid_input' =>
+          'Controlla nome, cognome, email e password.',
+        'email_exists' => 'Esiste già un account con questa email. Controlla anche i dipendenti disattivati.',
+        'weak_password' => 'La password non rispetta i requisiti del servizio. Scegline una più robusta.',
+        'forbidden' => 'Operazione riservata agli amministratori attivi.',
+        'unauthorized' => 'Sessione scaduta. Esci e accedi di nuovo.',
+        _ => 'Creazione non riuscita. Aggiorna l’elenco prima di riprovare; se il problema continua, verifica la configurazione del servizio.',
+      });
+    }
+  }
+
   Future<void> _update(String id, Map<String, dynamic> values) async {
     try {
-      // La risposta conferma che una riga è stata modificata: le RLS possono
-      // altrimenti produrre un update di zero righe senza un errore SQL.
+      // Richiedo la riga modificata per verificare il salvataggio: con le RLS
+      // potrei altrimenti aggiornare zero righe senza ricevere un errore SQL.
       await client
           .from('user_profile')
           .update(values)

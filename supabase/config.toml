@@ -1,0 +1,5 @@
+project_id = "shift_umc"
+
+[functions.create-employee]
+# Verifico il token con l’endpoint Auth nel gestore, anche con le nuove chiavi JWT.
+verify_jwt = false

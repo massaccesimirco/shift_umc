@@ -8,14 +8,20 @@ Target: Web, Android e iOS.
 
 - Login email/password e profili amministratore/dipendente con Supabase.
 - Gestione mansioni: creazione, modifica, disattivazione e riattivazione.
-- Gestione dipendenti esistenti: modifica nome/cognome e stato attivo.
-- Pianificazione disponibile come demo in memoria.
+- Gestione dipendenti: creazione con password iniziale, modifica nome/cognome e stato attivo.
+- Cambio password dal profilo personale.
+- Settimane: navigazione e creazione di bozze su Supabase (migrazione 004).
+- Assegnazioni e vista dipendente della pianificazione disponibili come demo in memoria.
 
 ## Struttura
 
 Flutter e Material 3 per l'interfaccia, Riverpod per lo stato, Supabase Auth e
 PostgreSQL per autenticazione e dati. `lib` separa schermate, provider, servizi,
 repository e modelli. Le migrazioni e i test SQL sono in `supabase`.
+
+La creazione dei dipendenti richiede la migrazione `005` e la funzione
+`create-employee` pubblicata su Supabase. I passaggi sono in
+[supabase/functions/README.md](supabase/functions/README.md).
 
 ## Avvio
 

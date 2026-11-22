@@ -22,7 +22,7 @@ class BackendConfig {
     if (publicKey.startsWith('sb_publishable_')) {
       return publicKey.length > 'sb_publishable_'.length;
     }
-    // Compatibilità con le vecchie chiavi anon. Le service_role sono vietate.
+    // Accetto anche le vecchie chiavi anon ed escludo le chiavi service_role.
     try {
       final parts = publicKey.split('.');
       if (parts.length != 3) return false;

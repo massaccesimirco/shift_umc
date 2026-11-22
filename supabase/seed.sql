@@ -1,4 +1,4 @@
--- Catalogo iniziale; nessun account e no credenziali (eseguibile piu volte ma occhio a non duplicare le gia inserite)
+-- Inizializzo soltanto il catalogo delle mansioni, senza account o credenziali.
 insert into public.duty (name, type, exclusive) values
   ('Sportello', 'ACTIVITY', false),
   ('Revisioni', 'ACTIVITY', false),

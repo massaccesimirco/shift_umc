@@ -5,8 +5,8 @@ class PlanningService {
   const PlanningService(this.repository);
   final PlanningRepository repository;
 
-  // Questo filtro governa la UI. Con Supabase serviranno anche policy RLS:
-  // un filtro nel client da solo non costituisce una protezione dei dati.
+  // Filtro le bozze nella UI della demo; nel percorso remoto applico anche le RLS.
+  // Non considero il solo filtro client una protezione dei dati.
   WeekPlan? publishedWeek(DateTime date) {
     final week = repository.weekStarting(mondayOf(date));
     return week?.status == WeekStatus.published ? week : null;
