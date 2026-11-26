@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/access_failure.dart';
 import '../../models/planning.dart';
+import '../../models/network_failure.dart';
 import '../../providers/auth_providers.dart';
 import 'login_screen.dart';
 import 'duties_panel.dart';
 import 'employees_panel.dart';
 import 'weeks_panel.dart';
 import 'password_dialog.dart';
+import 'employee_planning_panel.dart';
+import 'offline_planning_screen.dart';
 
 class AuthGate extends ConsumerStatefulWidget {
   const AuthGate({super.key});
@@ -58,10 +61,16 @@ class _AuthGateState extends ConsumerState<AuthGate>
                 loading: () => const Scaffold(
                   body: Center(child: CircularProgressIndicator()),
                 ),
-                error: (error, stack) => _AccountPage(
-                  message: accessErrorMessage(error),
-                  retry: () => ref.invalidate(currentProfileProvider(id)),
-                ),
+                error: (error, stack) => isNetworkFailure(error)
+                    ? OfflinePlanningScreen(
+                        key: ValueKey(id),
+                        userId: id,
+                        retry: () => ref.invalidate(currentProfileProvider(id)),
+                      )
+                    : _AccountPage(
+                        message: accessErrorMessage(error),
+                        retry: () => ref.invalidate(currentProfileProvider(id)),
+                      ),
                 data: (profile) => _AccountPage(
                   profile: profile,
                   retry: () => ref.invalidate(currentProfileProvider(id)),
@@ -81,25 +90,31 @@ class _AccountPage extends ConsumerStatefulWidget {
   ConsumerState<_AccountPage> createState() => _AccountPageState();
 }
 
-enum _AdminSection { duties, employees, weeks }
+enum _AccountSection { duties, employees, weeks, planning }
 
 class _AccountPageState extends ConsumerState<_AccountPage> {
-  _AdminSection? _section;
+  _AccountSection? _section;
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
     final message = widget.message;
     final retry = widget.retry;
-    final managing = _section != null && profile?.role == UserRole.admin;
+    final managing =
+        _section != null &&
+        profile != null &&
+        (_section == _AccountSection.planning
+            ? profile.role == UserRole.employee
+            : profile.role == UserRole.admin);
     final action = ref.watch(authActionProvider);
     return Scaffold(
       appBar: AppBar(
         title: Text(
           managing
               ? switch (_section!) {
-                  _AdminSection.duties => 'Mansioni',
-                  _AdminSection.employees => 'Dipendenti',
-                  _AdminSection.weeks => 'Settimane',
+                  _AccountSection.duties => 'Mansioni',
+                  _AccountSection.employees => 'Dipendenti',
+                  _AccountSection.weeks => 'Settimane',
+                  _AccountSection.planning => 'La mia pianificazione',
                 }
               : 'ShiftUMC',
         ),
@@ -123,9 +138,13 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
       body: SafeArea(
         child: managing
             ? switch (_section!) {
-                _AdminSection.duties => DutiesPanel(userId: profile!.id),
-                _AdminSection.employees => EmployeesPanel(userId: profile!.id),
-                _AdminSection.weeks => WeeksPanel(userId: profile!.id),
+                _AccountSection.duties => DutiesPanel(userId: profile.id),
+                _AccountSection.employees => EmployeesPanel(userId: profile.id),
+                _AccountSection.weeks => WeeksPanel(userId: profile.id),
+                _AccountSection.planning => EmployeePlanningPanel(
+                  key: ValueKey(profile.id),
+                  userId: profile.id,
+                ),
               }
             : Center(
                 child: SingleChildScrollView(
@@ -177,11 +196,21 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
                             icon: const Icon(Icons.password),
                             label: const Text('Cambia password'),
                           ),
+                          if (profile.role == UserRole.employee) ...[
+                            const SizedBox(height: 24),
+                            FilledButton.icon(
+                              onPressed: () => setState(
+                                () => _section = _AccountSection.planning,
+                              ),
+                              icon: const Icon(Icons.date_range),
+                              label: const Text('La mia pianificazione'),
+                            ),
+                          ],
                           if (profile.role == UserRole.admin) ...[
                             const SizedBox(height: 24),
                             FilledButton.icon(
                               onPressed: () => setState(
-                                () => _section = _AdminSection.duties,
+                                () => _section = _AccountSection.duties,
                               ),
                               icon: const Icon(Icons.work_outline),
                               label: const Text('Gestisci mansioni'),
@@ -189,7 +218,7 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
                             const SizedBox(height: 12),
                             FilledButton.icon(
                               onPressed: () => setState(
-                                () => _section = _AdminSection.employees,
+                                () => _section = _AccountSection.employees,
                               ),
                               icon: const Icon(Icons.people_outline),
                               label: const Text('Gestisci dipendenti'),
@@ -197,7 +226,7 @@ class _AccountPageState extends ConsumerState<_AccountPage> {
                             const SizedBox(height: 12),
                             FilledButton.icon(
                               onPressed: () => setState(
-                                () => _section = _AdminSection.weeks,
+                                () => _section = _AccountSection.weeks,
                               ),
                               icon: const Icon(Icons.calendar_month),
                               label: const Text('Gestisci settimane'),

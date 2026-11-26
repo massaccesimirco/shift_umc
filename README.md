@@ -11,7 +11,7 @@ Target: Web, Android e iOS.
 - Gestione dipendenti: creazione con password iniziale, modifica nome/cognome e stato attivo.
 - Cambio password dal profilo personale.
 - Settimane: navigazione e creazione di bozze su Supabase (migrazione 004).
-- Assegnazioni e vista dipendente della pianificazione disponibili come demo in memoria.
+- Assegnazioni nelle bozze, pubblicazione e consultazione personale dei turni su Supabase (migrazioni 006 e 007).
 
 ## Struttura
 
@@ -44,9 +44,3 @@ flutter test
 
 La disattivazione conserva lo storico; i permessi sono controllati nel database con RLS. Non elimina l'account
 Auth né rimuove istantaneamente dati già visualizzati.
-
-Per avviare la demo separata della pianificazione:
-
-```sh
-flutter run -d chrome --dart-define=SHIFTUMC_DEMO=true
-```

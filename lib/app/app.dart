@@ -1,11 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../presentation/screens/employee_screen.dart';
 import '../presentation/screens/auth_gate.dart';
 
 class ShiftUmcApp extends StatelessWidget {
-  const ShiftUmcApp({super.key, this.demoMode = false, this.setupMessage});
-  final bool demoMode;
+  const ShiftUmcApp({super.key, this.setupMessage});
   final String? setupMessage;
 
   @override
@@ -17,9 +15,7 @@ class ShiftUmcApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF156963)),
       ),
-      home: demoMode
-          ? const EmployeeScreen()
-          : setupMessage != null
+      home: setupMessage != null
           ? Scaffold(
               appBar: AppBar(title: const Text('ShiftUMC')),
               body: Center(

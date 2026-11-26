@@ -77,8 +77,10 @@ class DayPlanCard extends StatelessWidget {
                     children: [
                       Text(
                         duties
-                            .firstWhere((d) => d.id == assignment.dutyId)
-                            .name,
+                                .where((d) => d.id == assignment.dutyId)
+                                .firstOrNull
+                                ?.name ??
+                            'Mansione non disponibile',
                         style: theme.textTheme.bodyLarge,
                       ),
                       if (assignment.notes.isNotEmpty)

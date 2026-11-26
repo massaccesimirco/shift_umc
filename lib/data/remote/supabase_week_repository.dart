@@ -30,6 +30,37 @@ class SupabaseWeekRepository implements WeekRepository {
   );
 
   @override
+  Future<void> publish(String weekId, List<Assignment> expected) async {
+    final snapshot = [...expected]..sort((a, b) => a.id.compareTo(b.id));
+    try {
+      await client.rpc(
+        'publish_week',
+        params: {
+          'p_week_id': weekId,
+          'p_expected': snapshot
+              .map((a) => {'id': a.id, 'notes': a.notes})
+              .toList(),
+        },
+      );
+    } on PostgrestException catch (error) {
+      throw AccessFailure(switch (error.message) {
+        'publication_empty' =>
+          'Assegna almeno una mansione prima di pubblicare.',
+        'publication_conflict' =>
+          'La bozza è cambiata. Controlla le assegnazioni e riprova.',
+        'publication_invalid_assignments' => 'Controlla le assegnazioni: dipendenti e mansioni devono essere attivi e le fasce valide.',
+        'publication_week_missing' =>
+          'Settimana non disponibile. Aggiorna l’elenco.',
+        _ => switch (error.code) {
+          '42501' => 'Pubblicazione riservata agli amministratori attivi.',
+          'PGRST202' => 'Pubblicazione non configurata: applica la migrazione 007 su Supabase.',
+          _ => 'Pubblicazione non confermata. Aggiorna le settimane prima di riprovare.',
+        },
+      });
+    }
+  }
+
+  @override
   Future<WeekPlan?> find(DateTime monday) async {
     final row = await client
         .from('week_plan')

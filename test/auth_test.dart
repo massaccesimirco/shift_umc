@@ -77,21 +77,21 @@ void main() {
     expect(
       const BackendConfig(
         url: 'http://example.com',
-        publicKey: 'sb_publishable_demo',
+        publicKey: 'sb_publishable_test',
       ).isValid,
       isFalse,
     );
     expect(
       const BackendConfig(
         url: 'https://example.com',
-        publicKey: 'sb_secret_demo',
+        publicKey: 'sb_secret_test',
       ).isValid,
       isFalse,
     );
     expect(
       const BackendConfig(
         url: 'https://example.com',
-        publicKey: 'sb_publishable_demo',
+        publicKey: 'sb_publishable_test',
       ).isValid,
       isTrue,
     );
@@ -273,17 +273,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Benvenuto, Mirco Test'), findsOneWidget);
   });
-  testWidgets('Errore rete sul profilo: retry senza dati demo', (tester) async {
-    final repo = FakeAuthRepository()
-      ..id = 'user-1'
-      ..profileError = Exception('private-details');
-    await mount(tester, repo);
-    expect(find.textContaining('Servizio non raggiungibile'), findsOneWidget);
-    expect(find.textContaining('private-details'), findsNothing);
-    repo.profileError = null;
-    repo.profile = person();
-    await tester.tap(find.text('Riprova'));
-    await tester.pumpAndSettle();
-    expect(find.text('Amministratore'), findsOneWidget);
-  });
+  testWidgets(
+    'Errore rete sul profilo: retry senza mostrare dati non verificati',
+    (tester) async {
+      final repo = FakeAuthRepository()
+        ..id = 'user-1'
+        ..profileError = Exception('private-details');
+      await mount(tester, repo);
+      expect(find.textContaining('Servizio non raggiungibile'), findsOneWidget);
+      expect(find.textContaining('private-details'), findsNothing);
+      repo.profileError = null;
+      repo.profile = person();
+      await tester.tap(find.text('Riprova'));
+      await tester.pumpAndSettle();
+      expect(find.text('Amministratore'), findsOneWidget);
+    },
+  );
 }

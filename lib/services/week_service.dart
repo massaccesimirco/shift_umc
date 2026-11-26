@@ -19,6 +19,16 @@ class WeekService {
     return dateOnly(monday);
   }
 
+  Future<void> publish(WeekPlan week, List<Assignment> expected) async {
+    _validate(week.startDate);
+    if (week.status != WeekStatus.draft || expected.isEmpty) {
+      throw const AccessFailure(
+        'Pubblica una bozza con almeno una assegnazione.',
+      );
+    }
+    await repository.publish(week.id, expected);
+  }
+
   Future<WeekPlan?> find(DateTime monday) async =>
       repository.find(_validate(monday));
   Future<WeekPlan> createDraft(DateTime monday) async =>

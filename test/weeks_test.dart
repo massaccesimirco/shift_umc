@@ -19,6 +19,23 @@ class FakeWeeks implements WeekRepository {
   Object? readError, writeError;
   Completer<void>? pending;
   @override
+  Future<void> publish(String weekId, List<Assignment> expected) async {
+    writes++;
+    if (pending != null) await pending!.future;
+    if (writeError != null) throw writeError!;
+    final key = rows.keys.firstWhere((date) => rows[date]!.id == weekId);
+    final old = rows[key]!;
+    rows[key] = WeekPlan(
+      id: old.id,
+      startDate: old.startDate,
+      status: WeekStatus.published,
+      createdBy: old.createdBy,
+      createdAt: old.createdAt,
+      publishedAt: DateTime.now(),
+    );
+  }
+
+  @override
   Future<WeekPlan?> find(DateTime monday) async {
     reads++;
     if (readError != null) throw readError!;

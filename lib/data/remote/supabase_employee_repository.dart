@@ -52,8 +52,7 @@ class SupabaseEmployeeRepository implements EmployeeRepository {
       final details = error.details;
       final code = details is Map ? details['code'] : null;
       throw AccessFailure(switch (code) {
-        'invalid_input' =>
-          'Controlla nome, cognome, email e password.',
+        'invalid_input' => 'Controlla nome, cognome, email e password.',
         'email_exists' => 'Esiste già un account con questa email. Controlla anche i dipendenti disattivati.',
         'weak_password' => 'La password non rispetta i requisiti del servizio. Scegline una più robusta.',
         'forbidden' => 'Operazione riservata agli amministratori attivi.',
